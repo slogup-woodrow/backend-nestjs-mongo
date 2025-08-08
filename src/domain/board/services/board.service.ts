@@ -44,8 +44,8 @@ export class BoardService {
   }
 
   async findOne(query: any): Promise<Board | null> {
-    if (query.id || query._id) {
-      return this.boardRepository.findBoardById(query.id || query._id);
+    if (query._id) {
+      return this.boardRepository.findBoardById(query._id);
     }
 
     const findDto = new FindBoardDto();

@@ -12,6 +12,13 @@ export class Board {
   })
   _id?: string;
 
+  // @ApiProperty({
+  //   description: '게시글 숫자 ID',
+  //   example: 1,
+  // })
+  // @Prop({ type: Number, unique: true })
+  // id?: number;
+
   @ApiProperty({
     description: '게시글 제목',
     example: '안녕하세요!',
@@ -48,6 +55,14 @@ export class Board {
   isActive: boolean;
 
   @ApiProperty({
+    description: '삭제일시',
+    example: null,
+    required: false,
+  })
+  @Prop({ default: null })
+  deletedAt?: Date;
+
+  @ApiProperty({
     description: '생성일시',
     example: '2024-01-01T00:00:00.000Z',
   })
@@ -61,3 +76,17 @@ export class Board {
 }
 
 export const BoardSchema = SchemaFactory.createForClass(Board);
+
+// Auto-increment ID 를 위한 pre-save hook (숫자 ID 사용시)
+// BoardSchema.pre('save', async function (next) {
+//   if (this.isNew) {
+//     const Counter = this.db.model('Counter');
+//     const counter = await Counter.findByIdAndUpdate(
+//       'board_id',
+//       { $inc: { seq: 1 } },
+//       { new: true, upsert: true },
+//     );
+//     this.id = counter.seq;
+//   }
+//   next();
+// });

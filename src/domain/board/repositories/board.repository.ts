@@ -43,7 +43,7 @@ export class BoardRepository {
   }
 
   async findBoardById(id: string): Promise<Board | null> {
-    return this.boardModel.findById(id).exec();
+    return this.boardModel.findOne({ _id: id, deletedAt: null }).exec();
   }
 
   async updateBoard(
@@ -51,23 +51,32 @@ export class BoardRepository {
     updateBoardDto: UpdateBoardDto,
   ): Promise<Board | null> {
     return this.boardModel
-      .findByIdAndUpdate(id, updateBoardDto, { new: true })
+      .findOneAndUpdate({ _id: id }, updateBoardDto, { new: true })
       .exec();
   }
 
   async deleteBoard(id: string): Promise<Board | null> {
-    return this.boardModel.findByIdAndDelete(id).exec();
+    return this.boardModel
+      .findOneAndUpdate({ _id: id }, { deletedAt: new Date() }, { new: true })
+      .exec();
+  }
+
+  async hardDeleteBoard(id: string): Promise<Board | null> {
+    return this.boardModel.findOneAndDelete({ _id: id }).exec();
   }
 
   async incrementViewCount(id: string): Promise<Board | null> {
     return this.boardModel
-      .findByIdAndUpdate(id, { $inc: { viewCount: 1 } }, { new: true })
+      .findOneAndUpdate({ _id: id }, { $inc: { viewCount: 1 } }, { new: true })
       .exec();
   }
 
   private buildFilter(findBoardDto: FindBoardDto): any {
     const { title, author } = findBoardDto;
-    const filter: any = { isActive: true };
+    const filter: any = {
+      isActive: true,
+      deletedAt: null, // 삭제되지 않은 문서만 조회
+    };
 
     if (title) {
       filter.title = { $regex: title, $options: 'i' };
