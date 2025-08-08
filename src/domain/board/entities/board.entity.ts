@@ -23,35 +23,35 @@ export class Board {
     description: '게시글 제목',
     example: '안녕하세요!',
   })
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   title: string;
 
   @ApiProperty({
     description: '게시글 내용',
     example: '오늘도 좋은 하루 보내세요!',
   })
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   content: string;
 
   @ApiProperty({
     description: '작성자명',
     example: '홍길동',
   })
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   author: string;
 
   @ApiProperty({
     description: '조회수',
     example: 0,
   })
-  @Prop({ default: 0 })
+  @Prop({ type: Number, default: 0 })
   viewCount: number;
 
   @ApiProperty({
     description: '활성화 상태',
     example: true,
   })
-  @Prop({ default: true })
+  @Prop({ type: Boolean, default: true })
   isActive: boolean;
 
   @ApiProperty({
@@ -59,7 +59,7 @@ export class Board {
     example: null,
     required: false,
   })
-  @Prop({ default: null })
+  @Prop({ type: Date, default: null })
   deletedAt?: Date;
 
   @ApiProperty({

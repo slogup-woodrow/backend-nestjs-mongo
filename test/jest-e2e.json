@@ -5,5 +5,12 @@
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
-  }
+  },
+  "moduleNameMapper": {
+    "^envs/(.*)$": "<rootDir>/../envs/$1",
+    "^src/(.*)$": "<rootDir>/../src/$1"
+  },
+  "testPathIgnorePatterns": [
+    "/node_modules/"
+  ]
 }

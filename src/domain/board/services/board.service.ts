@@ -10,68 +10,41 @@ import { Pagination } from 'src/shared/decorators/paginated-query.decorator';
 export class BoardService {
   constructor(private readonly boardRepository: BoardRepository) {}
 
-  async create(createBoardDto: CreateBoardDto): Promise<Board> {
+  async generateBoard(createBoardDto: CreateBoardDto): Promise<Board> {
     return this.boardRepository.createBoard(createBoardDto);
   }
 
-  async findAll(
+  async getBoardListAndCount(
     findBoardDto: FindBoardDto,
     pagination?: Pagination,
-  ): Promise<{
-    boards: Board[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  }> {
-    const page = pagination?.page || 1;
-    const pageSize = pagination?.pageSize || 10;
-
+  ): Promise<{ list: Board[]; count: number }> {
     const { list, count } = await this.boardRepository.findBoardListAndCount(
       findBoardDto,
-      { page, pageSize },
+      pagination,
     );
 
-    const totalPages = Math.ceil(count / pageSize);
-
     return {
-      boards: list,
-      total: count,
-      page,
-      limit: pageSize,
-      totalPages,
+      list,
+      count,
     };
   }
 
-  async findOne(query: any): Promise<Board | null> {
-    if (query._id) {
-      return this.boardRepository.findBoardById(query._id);
-    }
-
-    const findDto = new FindBoardDto();
-    if (query.title) findDto.title = query.title;
-    if (query.author) findDto.author = query.author;
-
-    return this.boardRepository.findBoard(findDto);
+  async getBoard(findBoardDto: FindBoardDto): Promise<Board> {
+    return this.boardRepository.findBoard(findBoardDto);
   }
 
-  async findById(id: string): Promise<Board | null> {
-    const board = await this.boardRepository.findBoardById(id);
-    if (board) {
-      await this.boardRepository.incrementViewCount(id);
-      return this.boardRepository.findBoardById(id);
-    }
-    return null;
+  async findById(id: string): Promise<Board> {
+    return this.boardRepository.findBoardById(id);
   }
 
-  async update(
+  async modifyBoard(
     id: string,
     updateBoardDto: UpdateBoardDto,
-  ): Promise<Board | null> {
+  ): Promise<Board> {
     return this.boardRepository.updateBoard(id, updateBoardDto);
   }
 
-  async delete(id: string): Promise<Board | null> {
-    return this.boardRepository.deleteBoard(id);
+  async removeBoard(id: string): Promise<void> {
+    await this.boardRepository.deleteBoard(id);
   }
 }

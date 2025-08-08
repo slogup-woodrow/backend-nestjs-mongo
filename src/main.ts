@@ -3,10 +3,20 @@ import { AppModule } from './app.module';
 import { swaggerConstants } from './shared/constants/swagger.constants';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { commonConstants } from './shared/constants/common.constants';
+import { ValidationPipe } from '@nestjs/common';
 import basicAuth from 'express-basic-auth';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // Global validation pipe
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   /**
    * Swagger
@@ -44,6 +54,6 @@ async function bootstrap() {
     },
   });
 
-  await app.listen(process.env.PORT ?? 8000);
+  await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

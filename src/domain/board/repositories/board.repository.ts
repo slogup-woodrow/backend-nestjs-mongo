@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Board, BoardDocument } from '../entities/board.entity';
@@ -18,9 +18,15 @@ export class BoardRepository {
     return createdBoard.save();
   }
 
-  async findBoard(findBoardDto: FindBoardDto): Promise<Board | null> {
+  async findBoard(findBoardDto: FindBoardDto): Promise<Board> {
     const filter = this.buildFilter(findBoardDto);
-    return this.boardModel.findOne(filter).exec();
+    const result = await this.boardModel.findOne(filter).exec();
+
+    if (!result) {
+      throw new NotFoundException('Board not found');
+    }
+
+    return result;
   }
 
   async findBoardListAndCount(
@@ -29,52 +35,88 @@ export class BoardRepository {
   ): Promise<{ list: Board[]; count: number }> {
     const filter = this.buildFilter(findBoardDto);
 
-    const [list, count] = await Promise.all([
-      this.boardModel
-        .find(filter)
+    let query = this.boardModel.find(filter);
+
+    if (pagination) {
+      query = query
         .limit(pagination.pageSize)
-        .skip((pagination.page - 1) * pagination.pageSize)
-        .sort({ createdAt: -1 })
-        .exec(),
+        .skip((pagination.page - 1) * pagination.pageSize);
+    }
+
+    const [list, count] = await Promise.all([
+      query.sort({ createdAt: -1 }).exec(),
       this.boardModel.countDocuments(filter).exec(),
     ]);
+
+    if (count === 0) {
+      throw new NotFoundException();
+    }
 
     return { list, count };
   }
 
-  async findBoardById(id: string): Promise<Board | null> {
-    return this.boardModel.findOne({ _id: id, deletedAt: null }).exec();
+  async findBoardById(id: string): Promise<Board> {
+    const result = await this.boardModel
+      .findOne({ _id: id, deletedAt: null })
+      .exec();
+
+    if (!result) {
+      throw new NotFoundException(`Board with id ${id} not found`);
+    }
+
+    return result;
   }
 
   async updateBoard(
     id: string,
     updateBoardDto: UpdateBoardDto,
-  ): Promise<Board | null> {
-    return this.boardModel
+  ): Promise<Board> {
+    const result = await this.boardModel
       .findOneAndUpdate({ _id: id }, updateBoardDto, { new: true })
       .exec();
+
+    if (!result) {
+      throw new NotFoundException(`Board with id ${id} not found`);
+    }
+
+    return result;
   }
 
-  async deleteBoard(id: string): Promise<Board | null> {
-    return this.boardModel
+  async deleteBoard(id: string): Promise<void> {
+    const result = await this.boardModel
       .findOneAndUpdate({ _id: id }, { deletedAt: new Date() }, { new: true })
       .exec();
+
+    if (!result) {
+      throw new NotFoundException(`Board with id ${id} not found`);
+    }
   }
 
-  async hardDeleteBoard(id: string): Promise<Board | null> {
-    return this.boardModel.findOneAndDelete({ _id: id }).exec();
+  async hardDeleteBoard(id: string): Promise<Board> {
+    const result = await this.boardModel.findOneAndDelete({ _id: id }).exec();
+
+    if (!result) {
+      throw new NotFoundException(`Board with id ${id} not found`);
+    }
+
+    return result;
   }
 
-  async incrementViewCount(id: string): Promise<Board | null> {
-    return this.boardModel
+  async incrementViewCount(id: string): Promise<Board> {
+    const result = await this.boardModel
       .findOneAndUpdate({ _id: id }, { $inc: { viewCount: 1 } }, { new: true })
       .exec();
+
+    if (!result) {
+      throw new NotFoundException(`Board with id ${id} not found`);
+    }
+
+    return result;
   }
 
   private buildFilter(findBoardDto: FindBoardDto): any {
     const { title, author } = findBoardDto;
     const filter: any = {
-      isActive: true,
       deletedAt: null, // 삭제되지 않은 문서만 조회
     };
 

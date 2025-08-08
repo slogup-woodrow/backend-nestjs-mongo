@@ -18,6 +18,5 @@ export class FindBoardDto {
   @IsString()
   author?: string;
 
-  page?: number;
-  limit?: number;
+  id?: string;
 }
