@@ -6,6 +6,7 @@ import { CreateBoardDto } from '../dtos/request/create-board.dto';
 import { UpdateBoardDto } from '../dtos/request/update-board.dto';
 import { FindBoardDto } from '../dtos/request/find-board.dto';
 import { Pagination } from 'src/shared/decorators/paginated-query.decorator';
+import { constants } from '../board.constants';
 
 @Injectable()
 export class BoardRepository {
@@ -23,7 +24,7 @@ export class BoardRepository {
     const result = await this.boardModel.findOne(filter).exec();
 
     if (!result) {
-      throw new NotFoundException('Board not found');
+      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
     }
 
     return result;
@@ -49,7 +50,7 @@ export class BoardRepository {
     ]);
 
     if (count === 0) {
-      throw new NotFoundException();
+      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
     }
 
     return { list, count };
@@ -61,7 +62,7 @@ export class BoardRepository {
       .exec();
 
     if (!result) {
-      throw new NotFoundException(`Board with id ${id} not found`);
+      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
     }
 
     return result;
@@ -76,7 +77,7 @@ export class BoardRepository {
       .exec();
 
     if (!result) {
-      throw new NotFoundException(`Board with id ${id} not found`);
+      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
     }
 
     return result;
@@ -88,7 +89,7 @@ export class BoardRepository {
       .exec();
 
     if (!result) {
-      throw new NotFoundException(`Board with id ${id} not found`);
+      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
     }
   }
 
@@ -96,7 +97,7 @@ export class BoardRepository {
     const result = await this.boardModel.findOneAndDelete({ _id: id }).exec();
 
     if (!result) {
-      throw new NotFoundException(`Board with id ${id} not found`);
+      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
     }
 
     return result;
@@ -108,7 +109,7 @@ export class BoardRepository {
       .exec();
 
     if (!result) {
-      throw new NotFoundException(`Board with id ${id} not found`);
+      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
     }
 
     return result;
