@@ -6,6 +6,7 @@ import envFilePath from 'envs/env';
 import * as Joi from 'joi';
 import { commonConstants } from './shared/constants/common.constants';
 import { MongooseModule } from '@nestjs/mongoose';
+import { BoardModule } from './domain/board/board.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { MongooseModule } from '@nestjs/mongoose';
       }),
       inject: [ConfigService],
     }),
+    BoardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
