@@ -8,12 +8,12 @@ import basicAuth from 'express-basic-auth';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
+      whitelist: true, // 아무 decorator 도 없는 어떤 property의 object를 거름
+      forbidNonWhitelisted: true, // 잘못된 property의 리퀘스트 자체를 막음
       transform: true,
     }),
   );

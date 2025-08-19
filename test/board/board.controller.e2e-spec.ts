@@ -4,10 +4,17 @@ import * as request from 'supertest';
 import { AppModule } from '../../src/app.module';
 import { Connection } from 'mongoose';
 import { getConnectionToken } from '@nestjs/mongoose';
+import { faker } from '@faker-js/faker';
 
 describe('BoardController (e2e)', () => {
   let app: INestApplication;
   let connection: Connection;
+
+  const createMockBoardData = () => ({
+    title: faker.lorem.sentence({ min: 3, max: 8 }),
+    content: faker.lorem.paragraphs(2),
+    author: faker.person.fullName(),
+  });
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -44,11 +51,7 @@ describe('BoardController (e2e)', () => {
   describe('게시글 생성 (POST /boards)', () => {
     describe('Given 유효한 게시글 데이터가 주어졌을 때', () => {
       it('When POST /boards를 호출하면 Then 201 상태코드와 함께 게시글을 생성해야 한다', () => {
-        const createBoardDto = {
-          title: '새 게시글',
-          content: '새 내용입니다.',
-          author: '작성자',
-        };
+        const createBoardDto = createMockBoardData();
 
         return request(app.getHttpServer())
           .post('/boards')
@@ -69,7 +72,7 @@ describe('BoardController (e2e)', () => {
     describe('Given 필수 필드가 누락된 데이터가 주어졌을 때', () => {
       it('When POST /boards를 호출하면 Then 400 상태코드를 반환해야 한다 (ValidationPipe)', () => {
         const invalidDto = {
-          title: '제목만 있음',
+          title: faker.lorem.sentence(),
           // content, author 누락
         };
 
@@ -91,11 +94,7 @@ describe('BoardController (e2e)', () => {
     describe('Given 게시글들이 존재할 때', () => {
       it('When GET /boards를 호출하면 Then 200 상태코드와 함께 게시글 목록을 반환해야 한다', async () => {
         // Given: 테스트용 게시글 생성
-        const createBoardDto = {
-          title: '목록 테스트 게시글',
-          content: '목록 조회를 위한 테스트 내용',
-          author: '테스트 작성자',
-        };
+        const createBoardDto = createMockBoardData();
 
         await request(app.getHttpServer()).post('/boards').send(createBoardDto);
 
@@ -123,11 +122,11 @@ describe('BoardController (e2e)', () => {
     describe('Given 검색 조건이 주어졌을 때', () => {
       it('When GET /boards?title=검색어를 호출하면 Then 조건에 맞는 게시글만 반환해야 한다', async () => {
         // Given: 검색용 게시글 생성
-        const searchableTitle = '검색가능한제목';
+        const searchableTitle = faker.lorem.words(3);
         const createBoardDto = {
           title: searchableTitle,
-          content: '검색 테스트용 내용',
-          author: '검색 테스트 작성자',
+          content: faker.lorem.paragraphs(2),
+          author: faker.person.fullName(),
         };
 
         await request(app.getHttpServer()).post('/boards').send(createBoardDto);
@@ -151,11 +150,7 @@ describe('BoardController (e2e)', () => {
 
     beforeEach(async () => {
       // Given: 테스트용 게시글 생성
-      const createBoardDto = {
-        title: '상세 조회 테스트 게시글',
-        content: '상세 조회를 위한 테스트 내용',
-        author: '상세 테스트 작성자',
-      };
+      const createBoardDto = createMockBoardData();
 
       const response = await request(app.getHttpServer())
         .post('/boards')
@@ -195,11 +190,7 @@ describe('BoardController (e2e)', () => {
 
     beforeEach(async () => {
       // Given: 테스트용 게시글 생성
-      const createBoardDto = {
-        title: '수정 테스트 게시글',
-        content: '수정을 위한 테스트 내용',
-        author: '수정 테스트 작성자',
-      };
+      const createBoardDto = createMockBoardData();
 
       const response = await request(app.getHttpServer())
         .post('/boards')
@@ -211,8 +202,8 @@ describe('BoardController (e2e)', () => {
     describe('Given 유효한 수정 데이터가 주어졌을 때', () => {
       it('When PUT /boards/:id를 호출하면 Then 200 상태코드와 함께 수정된 게시글을 반환해야 한다', () => {
         const updateBoardDto = {
-          title: '수정된 제목',
-          content: '수정된 내용',
+          title: faker.lorem.sentence({ min: 3, max: 8 }),
+          content: faker.lorem.paragraphs(2),
         };
 
         return request(app.getHttpServer())
@@ -232,8 +223,8 @@ describe('BoardController (e2e)', () => {
       it('When PUT /boards/:id를 호출하면 Then 404 상태코드를 반환해야 한다', () => {
         const nonExistentId = '507f1f77bcf86cd799439999';
         const updateBoardDto = {
-          title: '수정 시도',
-          content: '존재하지 않는 게시글 수정 시도',
+          title: faker.lorem.sentence(),
+          content: faker.lorem.paragraphs(1),
         };
 
         return request(app.getHttpServer())
@@ -249,11 +240,7 @@ describe('BoardController (e2e)', () => {
 
     beforeEach(async () => {
       // Given: 테스트용 게시글 생성
-      const createBoardDto = {
-        title: '삭제 테스트 게시글',
-        content: '삭제를 위한 테스트 내용',
-        author: '삭제 테스트 작성자',
-      };
+      const createBoardDto = createMockBoardData();
 
       const response = await request(app.getHttpServer())
         .post('/boards')

@@ -3,31 +3,33 @@ import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { NotFoundException } from '@nestjs/common';
 import { BoardRepository } from '../../src/domain/board/repositories/board.repository';
-import { Board, BoardDocument } from '../../src/domain/board/entities/board.entity';
+import {
+  Board,
+  BoardDocument,
+} from '../../src/domain/board/entities/board.entity';
 import { CreateBoardDto } from '../../src/domain/board/dtos/request/create-board.dto';
 import { UpdateBoardDto } from '../../src/domain/board/dtos/request/update-board.dto';
 import { FindBoardDto } from '../../src/domain/board/dtos/request/find-board.dto';
 import { Pagination } from '../../src/shared/decorators/paginated-query.decorator';
+import { faker } from '@faker-js/faker';
 
 describe('BoardRepository', () => {
   let repository: BoardRepository;
   let model: Model<BoardDocument>;
 
-  const mockBoard: Board = {
-    _id: '507f1f77bcf86cd799439011',
-    title: '테스트 게시글',
-    content: '테스트 내용입니다.',
-    author: '작성자',
-    viewCount: 0,
+  const createMockBoard = (): Board => ({
+    _id: faker.database.mongodbObjectId(),
+    title: faker.lorem.sentence({ min: 3, max: 8 }),
+    content: faker.lorem.paragraphs(2),
+    author: faker.person.fullName(),
+    viewCount: faker.number.int({ min: 0, max: 100 }),
     isActive: true,
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-01-01'),
-  };
+    createdAt: faker.date.past(),
+    updatedAt: faker.date.recent(),
+  });
 
-  const mockBoardDocument = {
-    ...mockBoard,
-    save: jest.fn(),
-  };
+  let mockBoard: Board;
+  let mockBoardDocument: any;
 
   const mockQuery = {
     find: jest.fn().mockReturnThis(),
@@ -53,6 +55,13 @@ describe('BoardRepository', () => {
   };
 
   beforeEach(async () => {
+    // 각 테스트마다 새로운 mock 데이터 생성
+    mockBoard = createMockBoard();
+    mockBoardDocument = {
+      ...mockBoard,
+      save: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BoardRepository,
@@ -68,7 +77,9 @@ describe('BoardRepository', () => {
 
     // MockModel constructor를 통해 새 인스턴스 생성 시 mockBoardDocument 반환
     Object.setPrototypeOf(mockModel, Model);
-    mockModel.constructor = jest.fn().mockImplementation(() => mockBoardDocument);
+    mockModel.constructor = jest
+      .fn()
+      .mockImplementation(() => mockBoardDocument);
   });
 
   afterEach(() => {
@@ -80,9 +91,9 @@ describe('BoardRepository', () => {
       it('When createBoard를 호출하면 Then 새로운 게시글을 생성하고 저장해야 한다', async () => {
         // Given
         const createBoardDto: CreateBoardDto = {
-          title: '새 게시글',
-          content: '새 내용',
-          author: '새 작성자',
+          title: faker.lorem.sentence({ min: 3, max: 8 }),
+          content: faker.lorem.paragraphs(2),
+          author: faker.person.fullName(),
         };
         mockBoardDocument.save.mockResolvedValue(mockBoard);
 
@@ -100,7 +111,8 @@ describe('BoardRepository', () => {
     describe('Given 검색 조건이 주어졌을 때', () => {
       it('When findBoard를 호출하면 Then buildFilter를 통해 조건을 생성하고 해당 게시글을 조회해야 한다', async () => {
         // Given
-        const findBoardDto: FindBoardDto = { title: '검색어' };
+        const searchTerm = faker.lorem.word();
+        const findBoardDto: FindBoardDto = { title: searchTerm };
         mockQuery.exec.mockResolvedValue(mockBoard);
 
         // When
@@ -109,7 +121,7 @@ describe('BoardRepository', () => {
         // Then
         expect(model.findOne).toHaveBeenCalledWith({
           deletedAt: null,
-          title: { $regex: '검색어', $options: 'i' },
+          title: { $regex: searchTerm, $options: 'i' },
         });
         expect(mockQuery.exec).toHaveBeenCalledTimes(1);
         expect(result).toEqual(mockBoard);
@@ -119,7 +131,8 @@ describe('BoardRepository', () => {
     describe('Given 작성자 검색 조건이 주어졌을 때', () => {
       it('When findBoard를 호출하면 Then 작성자 조건으로 검색해야 한다', async () => {
         // Given
-        const findBoardDto: FindBoardDto = { author: '작성자' };
+        const authorName = faker.person.fullName();
+        const findBoardDto: FindBoardDto = { author: authorName };
         mockQuery.exec.mockResolvedValue(mockBoard);
 
         // When
@@ -128,7 +141,7 @@ describe('BoardRepository', () => {
         // Then
         expect(model.findOne).toHaveBeenCalledWith({
           deletedAt: null,
-          author: { $regex: '작성자', $options: 'i' },
+          author: { $regex: authorName, $options: 'i' },
         });
       });
     });
@@ -136,13 +149,13 @@ describe('BoardRepository', () => {
     describe('Given 존재하지 않는 게시글을 검색할 때', () => {
       it('When findBoard를 호출하면 Then NotFoundException을 던져야 한다', async () => {
         // Given
-        const findBoardDto: FindBoardDto = { title: '존재하지않는글' };
+        const findBoardDto: FindBoardDto = { title: faker.lorem.sentence() };
         mockQuery.exec.mockResolvedValue(null);
 
         // When & Then
-        await expect(repository.findBoard(findBoardDto))
-          .rejects
-          .toThrow(NotFoundException);
+        await expect(repository.findBoard(findBoardDto)).rejects.toThrow(
+          NotFoundException,
+        );
       });
     });
   });
@@ -161,7 +174,10 @@ describe('BoardRepository', () => {
           .mockResolvedValueOnce(mockCount); // countDocuments query
 
         // When
-        const result = await repository.findBoardListAndCount(findBoardDto, pagination);
+        const result = await repository.findBoardListAndCount(
+          findBoardDto,
+          pagination,
+        );
 
         // Then
         expect(model.find).toHaveBeenCalledWith({ deletedAt: null });
@@ -185,7 +201,10 @@ describe('BoardRepository', () => {
           .mockResolvedValueOnce(mockCount);
 
         // When
-        const result = await repository.findBoardListAndCount(findBoardDto);
+        const result = await repository.findBoardListAndCount(
+          findBoardDto,
+          null,
+        );
 
         // Then
         expect(model.find).toHaveBeenCalledWith({ deletedAt: null });
@@ -200,7 +219,7 @@ describe('BoardRepository', () => {
     describe('Given 유효한 게시글 ID가 주어졌을 때', () => {
       it('When findBoardById를 호출하면 Then 해당 ID와 삭제되지 않은 조건으로 조회해야 한다', async () => {
         // Given
-        const id = '507f1f77bcf86cd799439011';
+        const id = faker.database.mongodbObjectId();
         mockQuery.exec.mockResolvedValue(mockBoard);
 
         // When
@@ -221,10 +240,10 @@ describe('BoardRepository', () => {
     describe('Given 유효한 게시글 ID와 수정 데이터가 주어졌을 때', () => {
       it('When updateBoard를 호출하면 Then findOneAndUpdate로 게시글을 수정해야 한다', async () => {
         // Given
-        const id = '507f1f77bcf86cd799439011';
+        const id = faker.database.mongodbObjectId();
         const updateBoardDto: UpdateBoardDto = {
-          title: '수정된 제목',
-          content: '수정된 내용',
+          title: faker.lorem.sentence({ min: 3, max: 8 }),
+          content: faker.lorem.paragraphs(2),
         };
         const updatedBoard = { ...mockBoard, ...updateBoardDto };
         mockQuery.exec.mockResolvedValue(updatedBoard);
@@ -248,7 +267,7 @@ describe('BoardRepository', () => {
     describe('Given 유효한 게시글 ID가 주어졌을 때', () => {
       it('When deleteBoard를 호출하면 Then deletedAt을 설정하여 소프트 삭제해야 한다', async () => {
         // Given
-        const id = '507f1f77bcf86cd799439011';
+        const id = faker.database.mongodbObjectId();
         const deletedBoard = { ...mockBoard, deletedAt: new Date() };
         mockQuery.exec.mockResolvedValue(deletedBoard);
 
@@ -271,7 +290,7 @@ describe('BoardRepository', () => {
     describe('Given 유효한 게시글 ID가 주어졌을 때', () => {
       it('When hardDeleteBoard를 호출하면 Then 게시글을 데이터베이스에서 완전히 삭제해야 한다', async () => {
         // Given
-        const id = '507f1f77bcf86cd799439011';
+        const id = faker.database.mongodbObjectId();
         mockQuery.exec.mockResolvedValue(mockBoard);
 
         // When
@@ -289,7 +308,7 @@ describe('BoardRepository', () => {
     describe('Given 유효한 게시글 ID가 주어졌을 때', () => {
       it('When incrementViewCount를 호출하면 Then 조회수를 1 증가시켜야 한다', async () => {
         // Given
-        const id = '507f1f77bcf86cd799439011';
+        const id = faker.database.mongodbObjectId();
         const incrementedBoard = { ...mockBoard, viewCount: 1 };
         mockQuery.exec.mockResolvedValue(incrementedBoard);
 
@@ -312,9 +331,11 @@ describe('BoardRepository', () => {
     describe('Given 제목과 작성자가 모두 포함된 검색 조건이 주어졌을 때', () => {
       it('When buildFilter를 통해 조회하면 Then 두 조건이 모두 포함된 필터를 생성해야 한다', async () => {
         // Given
+        const titleSearch = faker.lorem.word();
+        const authorSearch = faker.person.fullName();
         const findBoardDto: FindBoardDto = {
-          title: '제목검색',
-          author: '작성자검색',
+          title: titleSearch,
+          author: authorSearch,
         };
         mockQuery.exec.mockResolvedValue(mockBoard);
 
@@ -324,8 +345,8 @@ describe('BoardRepository', () => {
         // Then
         expect(model.findOne).toHaveBeenCalledWith({
           deletedAt: null,
-          title: { $regex: '제목검색', $options: 'i' },
-          author: { $regex: '작성자검색', $options: 'i' },
+          title: { $regex: titleSearch, $options: 'i' },
+          author: { $regex: authorSearch, $options: 'i' },
         });
       });
     });
