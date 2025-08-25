@@ -86,8 +86,16 @@ describe('BoardController (e2e)', () => {
 
   describe('게시글 목록 조회 (GET /boards)', () => {
     describe('Given 빈 데이터베이스일 때', () => {
-      it('When GET /boards를 호출하면 Then 404 상태코드를 반환해야 한다 (빈 목록)', () => {
-        return request(app.getHttpServer()).get('/boards').expect(404);
+      it('When GET /boards를 호출하면 Then 200 상태코드와 빈 목록을 반환해야 한다', () => {
+        return request(app.getHttpServer())
+          .get('/boards')
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.rows).toBeDefined();
+            expect(Array.isArray(res.body.rows)).toBe(true);
+            expect(res.body.rows.length).toBe(0);
+            expect(res.body.count).toBe(0);
+          });
       });
     });
 
@@ -112,10 +120,16 @@ describe('BoardController (e2e)', () => {
     });
 
     describe('Given 빈 데이터베이스에 페이지네이션 파라미터가 주어졌을 때', () => {
-      it('When GET /boards?page=1&pageSize=5를 호출하면 Then 404 상태코드를 반환해야 한다 (빈 목록)', () => {
+      it('When GET /boards?page=1&pageSize=5를 호출하면 Then 200 상태코드와 빈 목록을 반환해야 한다', () => {
         return request(app.getHttpServer())
           .get('/boards?page=1&pageSize=5')
-          .expect(404);
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.rows).toBeDefined();
+            expect(Array.isArray(res.body.rows)).toBe(true);
+            expect(res.body.rows.length).toBe(0);
+            expect(res.body.count).toBe(0);
+          });
       });
     });
 
@@ -133,10 +147,12 @@ describe('BoardController (e2e)', () => {
 
         // When & Then
         return request(app.getHttpServer())
-          .get(`/boards?title=${searchableTitle}`)
+          .get(`/boards?title=${encodeURIComponent(searchableTitle)}`)
           .expect(200)
           .expect((res) => {
             expect(res.body.rows).toBeDefined();
+            expect(Array.isArray(res.body.rows)).toBe(true);
+            expect(res.body.count).toBeDefined();
             if (res.body.rows.length > 0) {
               expect(res.body.rows[0].title).toContain(searchableTitle);
             }
@@ -270,6 +286,106 @@ describe('BoardController (e2e)', () => {
         return request(app.getHttpServer())
           .delete(`/boards/${nonExistentId}`)
           .expect(404);
+      });
+    });
+  });
+
+  describe('Soft Delete 동작 검증', () => {
+    let createdBoardId: string;
+
+    beforeEach(async () => {
+      const createBoardDto = createMockBoardData();
+      const response = await request(app.getHttpServer())
+        .post('/boards')
+        .send(createBoardDto);
+      createdBoardId = response.body.row._id;
+    });
+
+    describe('Given 삭제된 게시글이 존재할 때', () => {
+      it('When GET /boards를 호출하면 Then 삭제된 게시글은 목록에서 제외되어야 한다', async () => {
+        // Given: 게시글을 soft delete
+        await request(app.getHttpServer())
+          .delete(`/boards/${createdBoardId}`)
+          .expect(200);
+
+        // When & Then: 목록 조회에서 삭제된 게시글 제외 확인
+        return request(app.getHttpServer())
+          .get('/boards')
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.rows).toBeDefined();
+            expect(Array.isArray(res.body.rows)).toBe(true);
+            expect(res.body.count).toBe(0);
+            expect(res.body.rows.length).toBe(0);
+          });
+      });
+
+      it('When 제목 검색을 하면 Then 삭제된 게시글은 검색결과에서 제외되어야 한다', async () => {
+        // Given: 게시글의 제목을 저장하고 삭제
+        const boardResponse = await request(app.getHttpServer())
+          .get(`/boards/${createdBoardId}`);
+        const boardTitle = boardResponse.body.row.title;
+
+        await request(app.getHttpServer())
+          .delete(`/boards/${createdBoardId}`)
+          .expect(200);
+
+        // When & Then: 제목으로 검색했을 때 삭제된 게시글 제외 확인
+        return request(app.getHttpServer())
+          .get(`/boards?title=${encodeURIComponent(boardTitle)}`)
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.rows).toBeDefined();
+            expect(Array.isArray(res.body.rows)).toBe(true);
+            expect(res.body.count).toBe(0);
+            expect(res.body.rows.length).toBe(0);
+          });
+      });
+
+      it('When 작성자 검색을 하면 Then 삭제된 게시글은 검색결과에서 제외되어야 한다', async () => {
+        // Given: 게시글의 작성자를 저장하고 삭제
+        const boardResponse = await request(app.getHttpServer())
+          .get(`/boards/${createdBoardId}`);
+        const boardAuthor = boardResponse.body.row.author;
+
+        await request(app.getHttpServer())
+          .delete(`/boards/${createdBoardId}`)
+          .expect(200);
+
+        // When & Then: 작성자로 검색했을 때 삭제된 게시글 제외 확인
+        return request(app.getHttpServer())
+          .get(`/boards?author=${encodeURIComponent(boardAuthor)}`)
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.rows).toBeDefined();
+            expect(Array.isArray(res.body.rows)).toBe(true);
+            expect(res.body.count).toBe(0);
+            expect(res.body.rows.length).toBe(0);
+          });
+      });
+
+      it('When 페이지네이션과 함께 조회하면 Then 삭제된 게시글은 제외되어야 한다', async () => {
+        // Given: 추가 게시글 생성 후 하나만 삭제
+        const additionalBoard = createMockBoardData();
+        await request(app.getHttpServer())
+          .post('/boards')
+          .send(additionalBoard);
+
+        await request(app.getHttpServer())
+          .delete(`/boards/${createdBoardId}`)
+          .expect(200);
+
+        // When & Then: 페이지네이션 조회에서 삭제된 게시글 제외 확인
+        return request(app.getHttpServer())
+          .get('/boards?page=1&pageSize=10')
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.rows).toBeDefined();
+            expect(Array.isArray(res.body.rows)).toBe(true);
+            expect(res.body.count).toBe(1);
+            expect(res.body.rows.length).toBe(1);
+            expect(res.body.rows[0]._id).not.toBe(createdBoardId);
+          });
       });
     });
   });

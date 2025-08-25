@@ -23,9 +23,10 @@ export class BoardService {
       pagination,
     );
 
+    // 빈 결과도 정상적으로 반환 (404 던지지 않음)
     return {
-      list,
-      count,
+      list: list || [],
+      count: count || 0,
     };
   }
 

@@ -49,10 +49,6 @@ export class BoardRepository {
       this.boardModel.countDocuments(filter).exec(),
     ]);
 
-    if (count === 0) {
-      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
-    }
-
     return { list, count };
   }
 
@@ -118,7 +114,7 @@ export class BoardRepository {
   private buildFilter(findBoardDto: FindBoardDto): any {
     const { title, author } = findBoardDto;
     const filter: any = {
-      deletedAt: null, // 삭제되지 않은 문서만 조회
+      deletedAt: null,
     };
 
     if (title) {
