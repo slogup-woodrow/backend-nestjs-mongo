@@ -266,11 +266,11 @@ describe('BoardController (e2e)', () => {
     });
 
     describe('Given 존재하는 게시글 ID가 주어졌을 때', () => {
-      it('When DELETE /boards/:id를 호출하면 Then 200 상태코드를 반환하고 게시글이 삭제되어야 한다', async () => {
+      it('When DELETE /boards/:id를 호출하면 Then 204 No Content 상태코드를 반환하고 게시글이 삭제되어야 한다', async () => {
         // When: 게시글 삭제
         await request(app.getHttpServer())
           .delete(`/boards/${createdBoardId}`)
-          .expect(200);
+          .expect(204);
 
         // Then: 삭제된 게시글은 조회되지 않아야 함 (Soft Delete로 인한 404)
         return request(app.getHttpServer())
@@ -306,7 +306,7 @@ describe('BoardController (e2e)', () => {
         // Given: 게시글을 soft delete
         await request(app.getHttpServer())
           .delete(`/boards/${createdBoardId}`)
-          .expect(200);
+          .expect(204);
 
         // When & Then: 목록 조회에서 삭제된 게시글 제외 확인
         return request(app.getHttpServer())
@@ -328,7 +328,7 @@ describe('BoardController (e2e)', () => {
 
         await request(app.getHttpServer())
           .delete(`/boards/${createdBoardId}`)
-          .expect(200);
+          .expect(204);
 
         // When & Then: 제목으로 검색했을 때 삭제된 게시글 제외 확인
         return request(app.getHttpServer())
@@ -350,7 +350,7 @@ describe('BoardController (e2e)', () => {
 
         await request(app.getHttpServer())
           .delete(`/boards/${createdBoardId}`)
-          .expect(200);
+          .expect(204);
 
         // When & Then: 작성자로 검색했을 때 삭제된 게시글 제외 확인
         return request(app.getHttpServer())
@@ -373,7 +373,7 @@ describe('BoardController (e2e)', () => {
 
         await request(app.getHttpServer())
           .delete(`/boards/${createdBoardId}`)
-          .expect(200);
+          .expect(204);
 
         // When & Then: 페이지네이션 조회에서 삭제된 게시글 제외 확인
         return request(app.getHttpServer())

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Board, BoardDocument } from '../entities/board.entity';
@@ -68,24 +72,48 @@ export class BoardRepository {
     id: string,
     updateBoardDto: UpdateBoardDto,
   ): Promise<Board> {
-    const result = await this.boardModel
-      .findOneAndUpdate({ _id: id }, updateBoardDto, { new: true })
-      .exec();
-
-    if (!result) {
-      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
+    // First check if board exists and not deleted
+    const existingBoard = await this.boardModel.findOne({
+      _id: id,
+      deletedAt: null,
+    });
+    if (!existingBoard) {
+      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD.en);
     }
 
-    return result;
+    // Update the board
+    const updateResult = await this.boardModel.updateOne(
+      { _id: id, deletedAt: null },
+      updateBoardDto,
+    );
+
+    if (updateResult.modifiedCount !== 1) {
+      throw new BadRequestException(
+        constants.errorMessages.FAIL_TO_UPDATE_BOARD.en,
+      );
+    }
+
+    // Return the updated board
+    return await this.boardModel.findById(id);
   }
 
   async deleteBoard(id: string): Promise<void> {
-    const result = await this.boardModel
-      .findOneAndUpdate({ _id: id }, { deletedAt: new Date() }, { new: true })
-      .exec();
+    // First check if board exists
+    const exists = await this.boardModel.exists({ _id: id, deletedAt: null });
+    if (!exists) {
+      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD.en);
+    }
 
-    if (!result) {
-      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
+    // Perform soft delete
+    const updateResult = await this.boardModel.updateOne(
+      { _id: id, deletedAt: null },
+      { deletedAt: new Date() },
+    );
+
+    if (updateResult.modifiedCount !== 1) {
+      throw new BadRequestException(
+        constants.errorMessages.FAIL_TO_DELETE_BOARD.en,
+      );
     }
   }
 
@@ -100,15 +128,26 @@ export class BoardRepository {
   }
 
   async incrementViewCount(id: string): Promise<Board> {
-    const result = await this.boardModel
-      .findOneAndUpdate({ _id: id }, { $inc: { viewCount: 1 } }, { new: true })
-      .exec();
-
-    if (!result) {
-      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
+    // First check if board exists and not deleted
+    const exists = await this.boardModel.exists({ _id: id, deletedAt: null });
+    if (!exists) {
+      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD.en);
     }
 
-    return result;
+    // Increment view count
+    const updateResult = await this.boardModel.updateOne(
+      { _id: id, deletedAt: null },
+      { $inc: { viewCount: 1 } },
+    );
+
+    if (updateResult.modifiedCount !== 1) {
+      throw new BadRequestException(
+        constants.errorMessages.FAIL_TO_UPDATE_BOARD.en,
+      );
+    }
+
+    // Return the updated board
+    return await this.boardModel.findById(id);
   }
 
   private buildFilter(findBoardDto: FindBoardDto): any {

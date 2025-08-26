@@ -63,9 +63,9 @@ export class BoardController {
     description: '게시판 상세 조회',
     responseModel: BoardResponseDto,
   })
-  @Get(':_id')
+  @Get(':id')
   async findOne(
-    @Param('_id') id: string,
+    @Param('id') id: string,
   ): Promise<ObjectResponse<BoardResponseDto>> {
     const result = await this.boardService.findById(id);
     return new ObjectResponse(BoardResponseDto.of(result));
