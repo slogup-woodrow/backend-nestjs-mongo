@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
   Put,
@@ -91,6 +93,7 @@ export class BoardController {
     responseModel: BoardResponseDto,
   })
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Param('id') id: string): Promise<void> {
     await this.boardService.removeBoard(id);
   }
