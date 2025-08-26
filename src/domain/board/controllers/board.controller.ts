@@ -34,6 +34,7 @@ export class BoardController {
     responseModel: BoardResponseDto,
   })
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() createBoardDto: CreateBoardDto,
   ): Promise<ObjectResponse<BoardResponseDto>> {
@@ -48,6 +49,7 @@ export class BoardController {
     responseModel: BoardListResponseDto,
   })
   @Get()
+  @HttpCode(HttpStatus.OK)
   async findAll(
     @Query() findBoardDto: FindBoardDto,
     @PaginatedQuery() pagination: Pagination,
@@ -66,6 +68,7 @@ export class BoardController {
     responseModel: BoardResponseDto,
   })
   @Get(':id')
+  @HttpCode(HttpStatus.OK)
   async findOne(
     @Param('id') id: string,
   ): Promise<ObjectResponse<BoardResponseDto>> {
@@ -79,6 +82,7 @@ export class BoardController {
     responseModel: BoardResponseDto,
   })
   @Put(':id')
+  @HttpCode(HttpStatus.OK)
   async update(
     @Param('id') id: string,
     @Body() updateBoardDto: UpdateBoardDto,
