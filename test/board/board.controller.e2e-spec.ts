@@ -158,6 +158,30 @@ describe('BoardController (e2e)', () => {
             }
           });
       });
+
+      it('When GET /boards?title=존재하지않는검색어를 호출하면 Then 200 상태코드와 빈 배열을 반환해야 한다', () => {
+        return request(app.getHttpServer())
+          .get('/boards?title=존재하지않는검색어')
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.rows).toBeDefined();
+            expect(Array.isArray(res.body.rows)).toBe(true);
+            expect(res.body.rows.length).toBe(0);
+            expect(res.body.count).toBe(0);
+          });
+      });
+
+      it('When GET /boards?id=invalid를 호출하면 Then 200 상태코드와 빈 배열을 반환해야 한다', () => {
+        return request(app.getHttpServer())
+          .get('/boards?id=invalid')
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.rows).toBeDefined();
+            expect(Array.isArray(res.body.rows)).toBe(true);
+            expect(res.body.rows.length).toBe(0);
+            expect(res.body.count).toBe(0);
+          });
+      });
     });
   });
 
@@ -196,6 +220,24 @@ describe('BoardController (e2e)', () => {
 
         return request(app.getHttpServer())
           .get(`/boards/${nonExistentId}`)
+          .expect(404);
+      });
+    });
+
+    describe('Given 잘못된 형식의 ID가 주어졌을 때', () => {
+      it('When GET /boards/:id를 호출하면 Then 404 상태코드를 반환해야 한다 (CastError -> NotFound)', () => {
+        const invalidId = '1';
+
+        return request(app.getHttpServer())
+          .get(`/boards/${invalidId}`)
+          .expect(404);
+      });
+
+      it('When GET /boards/:id를 호출하면 Then 404 상태코드를 반환해야 한다 (완전히 잘못된 형식)', () => {
+        const invalidId = 'invalid';
+
+        return request(app.getHttpServer())
+          .get(`/boards/${invalidId}`)
           .expect(404);
       });
     });

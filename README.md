@@ -105,7 +105,70 @@ pnpm run test:cov
 
 ## 예외 처리
 
-- NestJS의 Exception Filter를 활용하여 일관된 예외 처리를 구현합니다.
-- 커스텀 예외 및 에러 코드는 `shared/` 디렉토리에서 관리합니다.
+### HttpExceptionFilter
+
+- **위치**: `src/shared/filters/http-exception.filter.ts`
+- **등록**: `app.module.ts`에서 APP_FILTER로 전역 등록
+- **로깅**: Winston을 활용한 에러 로깅 시스템 적용
+
+#### 주요 기능
+
+1. **다국어 지원**: Accept-Language 헤더를 기반으로 한국어/기타 언어 메시지 제공
+2. **상태 코드별 응답 처리**:
+   - 500번대 에러: `statusCode`, `message`, `stack` 포함
+   - 400번대 에러: `statusCode`, `errorCode`, `message`, `data`, `error` 포함
+3. **에러 컨텍스트**: 커스텀 에러 코드와 추가 데이터 지원
+
+#### 응답 형식
+
+**기본 4xx 에러 응답**:
+```json
+{
+  "statusCode": 404,
+  "message": "Board not found",
+  "error": "NotFoundException"
+}
+```
+
+**errorCode가 있는 에러 객체 사용시**:
+```json
+{
+  "statusCode": 401,
+  "errorCode": "COMMON_ERROR_MESSAGE_BEARER_TOKEN_NEEDED",
+  "message": "해당 API 요청은 Bearer 토큰을 필요로 합니다",
+  "error": "UnauthorizedException"
+}
+```
+
+#### 사용법
+
+개발자는 단순히 에러 객체를 던지기만 하면 됩니다:
+
+```typescript
+// 다국어 지원 에러 객체 (필터가 Accept-Language 헤더 기반으로 언어 선택)
+throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
+
+// 단순 문자열 에러
+throw new NotFoundException('Board not found');
+```
+
+HttpExceptionFilter가 자동으로:
+- Accept-Language 헤더를 확인하여 적절한 언어의 메시지 선택
+- errorCode, data 필드가 있으면 응답에 포함
+
+**5xx 에러 응답**:
+```json
+{
+  "statusCode": 500,
+  "message": "내부 서버 오류",
+  "stack": "에러 스택 트레이스"
+}
+```
+
+#### 설정
+
+- **main.ts**: Global Validation Pipe와 함께 설정
+- **다국어**: `commonConstants.props.languages`를 통한 언어 설정
+- **로깅**: Winston을 통한 구조화된 로그 관리
 
 ---

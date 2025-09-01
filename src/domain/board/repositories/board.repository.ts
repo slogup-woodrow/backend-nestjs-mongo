@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Board, BoardDocument } from '../entities/board.entity';
 import { CreateBoardDto } from '../dtos/request/create-board.dto';
 import { UpdateBoardDto } from '../dtos/request/update-board.dto';
@@ -24,48 +24,72 @@ export class BoardRepository {
   }
 
   async findBoard(findBoardDto: FindBoardDto): Promise<Board> {
-    const filter = this.buildFilter(findBoardDto);
-    const result = await this.boardModel.findOne(filter).exec();
+    try {
+      const filter = this.buildFilter(findBoardDto);
+      const result = await this.boardModel.findOne(filter).exec();
 
-    if (!result) {
-      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
+      if (!result) {
+        throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
+      }
+
+      return result;
+    } catch (error) {
+      if (error.name === 'CastError') {
+        throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
+      }
+      throw error;
     }
-
-    return result;
   }
 
   async findBoardListAndCount(
     findBoardDto: FindBoardDto,
     pagination: Pagination,
   ): Promise<{ list: Board[]; count: number }> {
-    const filter = this.buildFilter(findBoardDto);
+    try {
+      const filter = this.buildFilter(findBoardDto);
 
-    let query = this.boardModel.find(filter);
+      let query = this.boardModel.find(filter);
 
-    if (pagination) {
-      query = query
-        .limit(pagination.pageSize)
-        .skip((pagination.page - 1) * pagination.pageSize);
+      if (pagination) {
+        query = query
+          .limit(pagination.pageSize)
+          .skip((pagination.page - 1) * pagination.pageSize);
+      }
+
+      const [list, count] = await Promise.all([
+        query.sort({ createdAt: -1 }).exec(),
+        this.boardModel.countDocuments(filter).exec(),
+      ]);
+
+      // Empty collections are valid - return 200 with empty array
+
+      return { list, count };
+    } catch (error) {
+      if (error.name === 'CastError') {
+        // Invalid query parameters return empty results for lists
+        return { list: [], count: 0 };
+      }
+      throw error;
     }
-
-    const [list, count] = await Promise.all([
-      query.sort({ createdAt: -1 }).exec(),
-      this.boardModel.countDocuments(filter).exec(),
-    ]);
-
-    return { list, count };
   }
 
   async findBoardById(id: string): Promise<Board> {
-    const result = await this.boardModel
-      .findOne({ _id: id, deletedAt: null })
-      .exec();
+    try {
+      const result = await this.boardModel
+        .findOne({ _id: id, deletedAt: null })
+        .exec();
 
-    if (!result) {
-      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
+      if (!result) {
+        throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
+      }
+
+      return result;
+    } catch (error) {
+      if (error.name === 'CastError') {
+        throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
+      }
+      throw error;
     }
-
-    return result;
   }
 
   async updateBoard(
@@ -78,7 +102,7 @@ export class BoardRepository {
       deletedAt: null,
     });
     if (!existingBoard) {
-      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD.en);
+      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
     }
 
     // Update the board
@@ -89,7 +113,7 @@ export class BoardRepository {
 
     if (updateResult.modifiedCount !== 1) {
       throw new BadRequestException(
-        constants.errorMessages.FAIL_TO_UPDATE_BOARD.en,
+        constants.errorMessages.FAIL_TO_UPDATE_BOARD,
       );
     }
 
@@ -112,7 +136,7 @@ export class BoardRepository {
 
     if (updateResult.modifiedCount !== 1) {
       throw new BadRequestException(
-        constants.errorMessages.FAIL_TO_DELETE_BOARD.en,
+        constants.errorMessages.FAIL_TO_DELETE_BOARD,
       );
     }
   }
@@ -131,7 +155,7 @@ export class BoardRepository {
     // First check if board exists and not deleted
     const exists = await this.boardModel.exists({ _id: id, deletedAt: null });
     if (!exists) {
-      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD.en);
+      throw new NotFoundException(constants.errorMessages.NOT_FOUND_BOARD);
     }
 
     // Increment view count
@@ -142,7 +166,7 @@ export class BoardRepository {
 
     if (updateResult.modifiedCount !== 1) {
       throw new BadRequestException(
-        constants.errorMessages.FAIL_TO_UPDATE_BOARD.en,
+        constants.errorMessages.FAIL_TO_UPDATE_BOARD,
       );
     }
 
@@ -151,11 +175,14 @@ export class BoardRepository {
   }
 
   private buildFilter(findBoardDto: FindBoardDto): any {
-    const { title, author } = findBoardDto;
+    const { title, author, id } = findBoardDto;
     const filter: any = {
       deletedAt: null,
     };
 
+    if (id) {
+      filter._id = id;
+    }
     if (title) {
       filter.title = { $regex: title, $options: 'i' };
     }

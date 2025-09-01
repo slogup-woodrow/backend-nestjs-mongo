@@ -10,6 +10,7 @@ const NODE_ENV_ARRAY: string[] = Object.values(nodeEnvs);
 const languages = {
   KO: 'ko',
   EN: 'en',
+  HI: 'hi',
 } as const;
 
 const LANGUAGE_ARRAY = Object.values(languages);

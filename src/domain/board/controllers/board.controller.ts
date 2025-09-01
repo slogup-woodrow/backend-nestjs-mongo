@@ -35,7 +35,7 @@ export class BoardController {
   })
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(
+  async post(
     @Body() createBoardDto: CreateBoardDto,
   ): Promise<ObjectResponse<BoardResponseDto>> {
     const result = await this.boardService.generateBoard(createBoardDto);
@@ -50,7 +50,7 @@ export class BoardController {
   })
   @Get()
   @HttpCode(HttpStatus.OK)
-  async findAll(
+  async getBoards(
     @Query() findBoardDto: FindBoardDto,
     @PaginatedQuery() pagination: Pagination,
   ): Promise<ListResponse<BoardListResponseDto>> {
@@ -69,7 +69,7 @@ export class BoardController {
   })
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async findOne(
+  async getBoard(
     @Param('id') id: string,
   ): Promise<ObjectResponse<BoardResponseDto>> {
     const result = await this.boardService.findById(id);
@@ -83,7 +83,7 @@ export class BoardController {
   })
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  async update(
+  async putBoard(
     @Param('id') id: string,
     @Body() updateBoardDto: UpdateBoardDto,
   ): Promise<ObjectResponse<BoardResponseDto>> {
@@ -98,7 +98,7 @@ export class BoardController {
   })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(@Param('id') id: string): Promise<void> {
+  async deleteBoard(@Param('id') id: string): Promise<void> {
     await this.boardService.removeBoard(id);
   }
 }

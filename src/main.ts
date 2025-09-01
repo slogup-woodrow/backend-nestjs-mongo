@@ -18,6 +18,8 @@ async function bootstrap() {
     }),
   );
 
+  // Note: HttpExceptionFilter는 app.module.ts에서 APP_FILTER로 등록됨
+
   /**
    * Swagger
    */

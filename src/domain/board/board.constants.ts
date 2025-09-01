@@ -21,5 +21,10 @@ export const constants = {
       hi: 'बोर्ड नहीं मिला',
       ko: '게시물을 찾을 수 없습니다',
     },
+    INVALID_OBJECT_ID: {
+      en: 'Invalid ObjectId format',
+      hi: 'अमान्य ObjectId प्रारूप',
+      ko: '올바르지 않은 ObjectId 형식입니다',
+    },
   },
 };
