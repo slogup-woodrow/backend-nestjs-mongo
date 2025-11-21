@@ -1,10 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { ApiProperty } from '@nestjs/swagger';
+import { constants } from '../board.constants';
 
 export type BoardDocument = Board & Document;
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, collection: 'Board', autoIndex: true })
 export class Board {
   @ApiProperty({
     description: '게시글 ID',
@@ -12,12 +13,25 @@ export class Board {
   })
   _id?: string;
 
-  // @ApiProperty({
-  //   description: '게시글 숫자 ID',
-  //   example: 1,
-  // })
-  // @Prop({ type: Number, unique: true })
-  // id?: number;
+  @ApiProperty({
+    description: '생성일시',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  createdAt?: Date;
+
+  @ApiProperty({
+    description: '수정일시',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  updatedAt?: Date;
+
+  @ApiProperty({
+    description: '삭제일시',
+    example: null,
+    required: false,
+  })
+  @Prop({ type: Date, default: null })
+  deletedAt?: Date;
 
   @ApiProperty({
     description: '게시글 제목',
@@ -53,40 +67,15 @@ export class Board {
   })
   @Prop({ type: Boolean, default: true })
   isActive: boolean;
-
-  @ApiProperty({
-    description: '삭제일시',
-    example: null,
-    required: false,
-  })
-  @Prop({ type: Date, default: null })
-  deletedAt?: Date;
-
-  @ApiProperty({
-    description: '생성일시',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  createdAt?: Date;
-
-  @ApiProperty({
-    description: '수정일시',
-    example: '2024-01-01T00:00:00.000Z',
-  })
-  updatedAt?: Date;
 }
 
 export const BoardSchema = SchemaFactory.createForClass(Board);
 
-// Auto-increment ID 를 위한 pre-save hook (숫자 ID 사용시)
-// BoardSchema.pre('save', async function (next) {
-//   if (this.isNew) {
-//     const Counter = this.db.model('Counter');
-//     const counter = await Counter.findByIdAndUpdate(
-//       'board_id',
-//       { $inc: { seq: 1 } },
-//       { new: true, upsert: true },
-//     );
-//     this.id = counter.seq;
-//   }
-//   next();
-// });
+BoardSchema.index(
+  { title: 1 },
+  {
+    unique: true, //unique,
+    sparse: true, //null값 제외
+    name: constants.props.index.BOARD_UNIQUE_TITLE,
+  },
+);

@@ -23,6 +23,7 @@ import {
 } from 'src/shared/decorators/paginated-query.decorator';
 import { ObjectResponse } from 'src/shared/dtos/object-response.dto';
 import { ListResponse } from 'src/shared/dtos/list-response.dto';
+import { ParseMongoIdPipe } from 'src/shared/pipes/mongo-id-validation.pipe';
 
 @Controller('boards')
 export class BoardController {
@@ -70,9 +71,9 @@ export class BoardController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getBoard(
-    @Param('id') id: string,
+    @Param('id', ParseMongoIdPipe) id: string,
   ): Promise<ObjectResponse<BoardResponseDto>> {
-    const result = await this.boardService.findById(id);
+    const result = await this.boardService.getBoard({ id });
     return new ObjectResponse(BoardResponseDto.of(result));
   }
 
@@ -84,7 +85,7 @@ export class BoardController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   async putBoard(
-    @Param('id') id: string,
+    @Param('id', ParseMongoIdPipe) id: string,
     @Body() updateBoardDto: UpdateBoardDto,
   ): Promise<ObjectResponse<BoardResponseDto>> {
     const result = await this.boardService.modifyBoard(id, updateBoardDto);
@@ -98,7 +99,7 @@ export class BoardController {
   })
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteBoard(@Param('id') id: string): Promise<void> {
+  async deleteBoard(@Param('id', ParseMongoIdPipe) id: string): Promise<void> {
     await this.boardService.removeBoard(id);
   }
 }

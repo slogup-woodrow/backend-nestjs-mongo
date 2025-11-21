@@ -34,9 +34,9 @@ export class BoardService {
     return this.boardRepository.findBoard(findBoardDto);
   }
 
-  async findById(id: string): Promise<Board> {
-    return this.boardRepository.findBoardById(id);
-  }
+  // async findById(id: string): Promise<Board> {
+  //   return this.boardRepository.findBoardById(id);
+  // }
 
   async modifyBoard(
     id: string,
